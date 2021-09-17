@@ -1,0 +1,93 @@
+name,description
+T11_C1,Total workers in workplace zone
+T11_T,Total Daytime population in workplace zone
+T1_A1,(Age)0 - 14 years
+T1_A2,(Age)15 - 24 years
+T1_A3,(Age)25 - 34 years
+T1_A4,(Age)35 - 44 years
+T1_A5,(Age)45 - 54 years
+T1_A6,(Age)55 - 64 years
+T1_A7,(Age)65 years and over
+T1_T,(Age)Total
+T2_M1,(Means of Travel)On foot
+T2_M2,(Means of Travel)Bicycle
+T2_M3,"(Means of Travel)Bus,minibus or coach"
+T2_M4,"(Means of Travel)Train,DART or LUAS"
+T2_M5,(Means of Travel)Motorcycle or scooter
+T2_M6,(Means of Travel)Car driver
+T2_M7,(Means of Travel)Car passenger
+T2_M8,(Means of Travel)Van
+T2_M9,"(Means of Travel)Other (incl. lorry) or Working at home,school or college"
+T2_NS,"(Means of Travel)Not stated or Not at work,school or college"
+T2_T,(Means of Travel)Total
+T3_T1,(Time leaving home)Before 06:30
+T3_T2,(Time leaving home)06:30-07:00
+T3_T3,(Time leaving home)07:01-07:30
+T3_T4,(Time leaving home)07:31-08:00
+T3_T5,(Time leaving home)08:01-08:30
+T3_T6,(Time leaving home)08:31-09:00
+T3_T7,(Time leaving home)09:01-09:30
+T3_T8,(Time leaving home)After 09:30
+T3_NS,"(Time leaving home)Not stated or Not at work,school or college"
+T3_T,(Time leaving home)Total
+T4_D1,(Journey time)Under 15 mins
+T4_D2,(Journey time)1/4 hour - under 1/2 hour
+T4_D3,(Journey time)1/2 hour - under 3/4 hour
+T4_D4,(Journey time)3/4 hour - under 1 hour
+T4_D5,(Journey time)1 hour - under 1 1/2 hours
+T4_D6,(Journey time)1 1/2 hours and over
+T4_NS,(Journey time)Not stated
+T4_T,(Journey time)Total
+T5_O1,"(Occupation)Managers, Directors and Senior Officials"
+T5_O2,(Occupation)Professional Occupations
+T5_O3,(Occupation)Associate Professional and Technical Occupations
+T5_O4,(Occupation)Administrative and Secretarial Occupations
+T5_O5,"(Occupation)Skilled Trades Occupations, Leisure and Other Service Occupations"
+T5_O6,(Occupation)Caring
+T5_O7,(Occupation)Sales and Customer Service Occupations
+T5_O8,(Occupation)Process Plant and Machine Operatives
+T5_O9,(Occupation)Elementary Occupations
+T5_NS,(Occupation)Not stated
+T5_T,(Occupation)Total
+T6_SC1,(Social Class)Professional Workers
+T6_SC2,(Social Class)Managerial and Technical
+T6_SC3,(Social Class)Non-manual
+T6_SC4,(Social Class)Skilled manual
+T6_SC5,(Social Class)Semi-Skilled
+T6_SC6,(Social Class)Unskilled
+T6_SC7,(Social Class)All other gainfully occupied and unknown
+T6_T,(Social Class)Total
+T7_SG1,(SEG)A Employers and managers
+T7_SG2,(SEG)B Higher professionals
+T7_SG3,(SEG)C Lower professionals
+T7_SG4,(SEG)D Non-manual
+T7_SG5,(SEG)E Manual skilled
+T7_SG6,(SEG)F Semi-skilled
+T7_SG7,(SEG)G Unskilled
+T7_SG8,(SEG)H Own account workers
+T7_SG9,(SEG)I Farmers
+T7_SG10,(SEG)J Agricultural workers
+T7_SCG11,(SEG)Z All others gainfully occupied and unknown
+T7_T,(SEG)Total
+T8_I1,"(Industry)Agriculture,forestry and fishing"
+T8_I2,"(Industry)Manufacturing,mining and quarrying"
+T8_I3,(Industry)Construction
+T8_I4,"(Industry)Wholesale,Retail Trade"
+T8_I5,"(Industry)Information and Communication, Financial"
+T8_I6,(Industry)Public Administration and Defence; Compulsory Social Security
+T8_I7,"(Industry)Education,Human Health and Social Work Activities"
+T8_I8,(Industry)Other Service Activities
+T8_I9,(Industry)Not stated
+T8_T,(Industry)Total
+T9_N1,(Nationality)Ireland
+T9_N2,(Nationality)UK
+T9_N3,(Nationality)Poland
+T9_N4,(Nationality)Other EU 28
+T9_N5,(Nationality)Rest of World
+T9_NS,(Nationality)Not stated
+T9_T,(Nationality)Total
+T10_E1,(Level of Education)Completed secondary or lower (NFQ 1-6)
+T10_E2,(Level of Education)Completed third level or higher (NFQ 7-10)
+T10_E3,(Level of Education)Not stated
+T10_T,(Level of Education)Total
+T12_V1,(Journey time)Average time to travel to work

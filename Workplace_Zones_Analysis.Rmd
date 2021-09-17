@@ -1,0 +1,607 @@
+---
+title: "Workplace Zones Analysis"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+# Introduction
+
+This notebook outlines the analysis of the Irish Central Statistics Office Workplace Zones dataset, and in particular compares it with the Valuation Office dataset.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = FALSE, warning = FALSE, message = FALSE, cache = TRUE)
+library(tidyverse)
+library(tidymodels)
+library(lubridate)
+library(magrittr)
+library(scales)
+library(sf)
+library(summarytools)
+library(units)
+
+theme_set(theme_light())
+```
+
+Load the data. Data obtained from [this](https://www.cso.ie/en/census/census2016reports/workplacezonesand1kmpopulationgrids/) link.
+
+```{r load-data}
+wz <- readxl::read_xlsx("data/wz_2016.xlsx")
+wz_glossary <- readxl::read_xlsx("data/wz_glossary.xlsx")
+
+wz %<>% 
+  select(-93)
+
+wz_glossary %<>% select(name = `FIELD NAME WITHIN TABLES`, description = `DESCRIPTION OF FIELD`) %>% 
+  filter(!is.na(name))
+
+wz_glossary %>% 
+  write_csv("op/wz_glossary.csv")
+
+wz %>% summarytools::dfSummary() %>%  view()
+
+wz %>% 
+  pivot_longer(cols = starts_with("T"),
+               names_to = "Variable") %>% 
+  write_csv("op/wz_features_long.csv")
+```
+
+The next step is to build descriptive proportions from the data. This is necessary so that comparisons can be made across WZs with differing total numbers of people.
+
+```{r build-predictors}
+
+prop_workers <- wz %>% 
+  transmute(T11_C1/T11_T)
+
+prop_0_14 <- wz %>% 
+  transmute(T1_A1/T1_T)
+
+prop_15_24 <- wz %>% 
+  transmute(T1_A2/T1_T)
+
+prop_25_34 <- wz %>% 
+  transmute(T1_A3/T1_T)
+
+
+prop_35_44 <- wz %>% 
+  transmute(T1_A4/T1_T)
+
+prop_45_54 <- wz %>% 
+  transmute(T1_A5/T1_T)
+
+prop_55_64 <- wz %>% 
+  transmute(T1_A6/T1_T)
+
+prop_gt65 <- wz %>% 
+  transmute(T1_A7/T1_T)
+
+prop_mot_foot <- wz %>% 
+  transmute(T2_M1 / T2_T)
+
+prop_mot_bike <- wz %>% 
+  transmute(T2_M2 / T2_T)
+
+prop_mot_bus <- wz %>% 
+  transmute(T2_M3 / T2_T)  
+
+prop_mot_rail <- wz %>% 
+  transmute(T2_M4 / T2_T)
+
+prop_mot_motorcycle <- wz %>% 
+  transmute(T2_M5 / T2_T)
+
+prop_mot_car_driver <- wz %>% 
+  transmute(T2_M6 / T2_T)
+
+prop_mot_car_passenger <- wz %>% 
+  transmute(T2_M7 / T2_T)
+
+prop_mot_van <- wz %>% 
+  transmute(T2_M8 / T2_T)
+
+prop_lh_630 <- wz %>% 
+  transmute(T3_T1 / T3_T)
+
+prop_lh_700 <- wz %>% 
+  transmute(T3_T2 / T3_T)
+
+prop_lh_730 <- wz %>% 
+  transmute(T3_T3 / T3_T)
+
+prop_lh_800 <- wz %>% 
+  transmute(T3_T4 / T3_T)
+
+prop_lh_830 <- wz %>% 
+  transmute(T3_T5 / T3_T)
+
+prop_lh_900 <- wz %>% 
+  transmute(T3_T6 / T3_T)
+
+prop_lh_930 <- wz %>% 
+  transmute(T3_T7 / T3_T)
+
+prop_jt_lt15 <- wz %>% 
+  transmute(T4_D1 / T4_T)
+
+prop_jt_lt30 <- wz %>% 
+  transmute(T4_D2 / T4_T)
+
+prop_jt_lt45 <- wz %>% 
+  transmute(T4_D3 / T4_T)
+
+prop_jt_lt60 <- wz %>% 
+  transmute(T4_D4 / T4_T)
+
+prop_jt_lt90 <- wz %>% 
+  transmute(T4_D5 / T4_T)
+
+prop_jt_gt90 <- wz %>% 
+  transmute(T4_D6 / T4_T)
+
+prop_occ_senior <- wz %>% 
+  transmute(T5_O1 / T5_T)
+
+prop_occ_prof <- wz %>% 
+  transmute(T5_O2 / T5_T)
+
+prop_occ_tech <- wz %>% 
+  transmute(T5_O3 / T5_T)
+
+prop_occ_admin <- wz %>% 
+  transmute(T5_O4 / T5_T)
+
+prop_occ_service <- wz %>% 
+  transmute(T5_O5 / T5_T)
+
+prop_occ_caring <- wz %>% 
+  transmute(T5_O6 / T5_T)
+
+prop_occ_retail <- wz %>% 
+  transmute(T5_O7 / T5_T)
+
+prop_occ_factory <- wz %>% 
+  transmute(T5_O8 / T5_T)
+
+prop_occ_elementary <- wz %>% 
+  transmute(T5_O9 / T5_T)
+
+prop_employers <- wz %>% 
+  transmute(T7_SG1 / T7_T)
+
+prop_higher_prof <- wz %>% 
+  transmute(T7_SG2 / T7_T)
+
+prop_lower_prof <- wz %>% 
+  transmute(T7_SG3 / T7_T)
+
+prop_non_manual <- wz %>% 
+  transmute(T7_SG4 / T7_T)
+
+prop_manual_skiled <- wz %>% 
+  transmute(T7_SG5 / T7_T)
+
+prop_semi_skilled <- wz %>% 
+  transmute(T7_SG6 / T7_T)
+
+prop_unskilled <- wz %>% 
+  transmute(T7_SG7 / T7_T)
+
+prop_own_account <- wz %>% 
+  transmute(T7_SG8 / T7_T)
+
+prop_farmers <- wz %>% 
+  transmute(T7_SG9 / T7_T)
+
+prop_agri_workers <- wz %>% 
+  transmute(T7_SG10 / T7_T)
+
+prop_ind_agri <- wz %>% 
+  transmute(T8_I1 / T8_T)
+
+prop_ind_manufacturing <- wz %>% 
+  transmute(T8_I2 / T8_T)
+
+prop_ind_construction <- wz %>% 
+  transmute(T8_I1 / T8_T)
+
+prop_ind_agri <- wz %>% 
+  transmute(T8_I3 / T8_T)
+
+prop_ind_retail <- wz %>% 
+  transmute(T8_I4 / T8_T)
+
+prop_ind_info_finance <- wz %>% 
+  transmute(T8_I5 / T8_T)
+
+prop_ind_public <- wz %>% 
+  transmute(T8_I6 / T8_T)
+
+prop_ind_edu_health <- wz %>% 
+  transmute(T8_I7 / T8_T)
+
+prop_ind_service <- wz %>% 
+  transmute(T8_I8 / T8_T)
+
+prop_nat_ireland <- wz %>% 
+  transmute(T9_N1 / T9_T)
+
+prop_nat_uk <- wz %>% 
+  transmute(T9_N2 / T9_T)
+
+prop_nat_poland <- wz %>% 
+  transmute(T9_N3 / T9_T)
+
+prop_nat_other_eu <- wz %>% 
+  transmute(T9_N4 / T9_T)
+
+prop_nat_row <- wz %>% 
+  transmute(T9_N5 / T9_T)
+
+prop_loe_2ary <- wz %>% 
+  transmute(T10_E1 / T10_T)
+
+prop_loe_3ary <- wz %>% 
+  transmute(T10_E2 / T10_T)
+
+# assemble these features
+wz_features <- 
+  bind_cols(wz %>% select(GUID),
+            prop_workers,
+            prop_0_14,
+            prop_15_24,
+            prop_25_34,
+            prop_35_44,
+            prop_45_54,
+            prop_55_64,
+            prop_gt65,
+            prop_mot_bike,
+            prop_mot_bus,
+            prop_mot_car_driver,
+            prop_mot_car_passenger,
+            prop_mot_foot,
+            prop_mot_motorcycle,
+            prop_mot_rail,
+            prop_mot_van,
+            prop_ind_agri,
+            prop_ind_construction,
+            prop_ind_edu_health,
+            prop_ind_info_finance,
+            prop_ind_manufacturing,
+            prop_ind_public,
+            prop_ind_retail,
+            prop_ind_service,
+            prop_agri_workers,
+            prop_employers,
+            prop_farmers,
+            prop_higher_prof,
+            prop_lower_prof,
+            prop_manual_skiled,
+            prop_non_manual,
+            prop_own_account,
+            prop_semi_skilled,
+            prop_loe_2ary,
+            prop_loe_3ary,
+            prop_jt_lt15,
+            prop_jt_lt30,
+            prop_jt_lt45,
+            prop_jt_lt60,
+            prop_jt_lt90,
+            prop_jt_gt90,
+            prop_lh_630,
+            prop_lh_700,
+            prop_lh_730,
+            prop_lh_800,
+            prop_lh_830,
+            prop_lh_900,
+            prop_lh_930,
+            prop_occ_admin,
+            prop_occ_caring,
+            prop_occ_elementary,
+            prop_occ_factory,
+            prop_occ_prof,
+            prop_occ_retail,
+            prop_occ_senior,
+            prop_occ_service,
+            prop_occ_tech,
+            prop_nat_ireland,
+            prop_nat_uk,
+            prop_nat_other_eu,
+            prop_nat_poland,
+            prop_nat_row)
+
+names(wz_features) <- c("GUID",
+            "prop_workers",
+            "prop_0_14",
+            "prop_15_24",
+            "prop_25_34",
+            "prop_35_44",
+            "prop_45_54",
+            "prop_55_64",
+            "prop_gt65",
+            "prop_mot_bike",
+            "prop_mot_bus",
+            "prop_mot_car_driver",
+            "prop_mot_car_passenger",
+            "prop_mot_foot",
+            "prop_mot_motorcycle",
+            "prop_mot_rail",
+            "prop_mot_van",
+            "prop_ind_agri",
+            "prop_ind_construction",
+            "prop_ind_edu_health",
+            "prop_ind_info_finance",
+            "prop_ind_manufacturing",
+            "prop_ind_public",
+            "prop_ind_retail",
+            "prop_ind_service",
+            "prop_agri_workers",
+            "prop_employers",
+            "prop_farmers",
+            "prop_higher_prof",
+            "prop_lower_prof",
+            "prop_manual_skiled",
+            "prop_non_manual",
+            "prop_own_account",
+            "prop_semi_skilled",
+            "prop_loe_2ary",
+            "prop_loe_3ary",
+            "prop_jt_lt15",
+            "prop_jt_lt30",
+            "prop_jt_lt45",
+            "prop_jt_lt60",
+            "prop_jt_lt90",
+            "prop_jt_gt90",
+            "prop_lh_630",
+            "prop_lh_700",
+            "prop_lh_730",
+            "prop_lh_800",
+            "prop_lh_830",
+            "prop_lh_900",
+            "prop_lh_930",
+            "prop_occ_admin",
+            "prop_occ_caring",
+            "prop_occ_elementary",
+            "prop_occ_factory",
+            "prop_occ_prof",
+            "prop_occ_retail",
+            "prop_occ_senior",
+            "prop_occ_service",
+            "prop_occ_tech",
+            "prop_nat_ireland",
+            "prop_nat_uk",
+            "prop_nat_other_eu",
+            "prop_nat_poland",
+            "prop_nat_row")
+
+wz_features %<>%
+  mutate(across(everything(), ~replace_na(.x, 0.0)))
+
+wz_features %>%
+  write_csv("op/wz_features.csv")
+
+```
+
+Now it's time to get working on the spatial data. We will load the Workplace Zone geometry file from a shapefile that we downloaded from the CSO website. We will also get the Valuation Office data, and create a spatial file for each property using the coordinates given. We will then perform a spatial join and sum up the total rateable value for all properties lying inside a Workplace Zone. then we can start some analysis.
+
+Note: we prepared an extract of the Valuation Office data in a previous analysis - this will be reused. The analysis can be seen [here](https://github.com/mick-odonnell/valuation_office)
+
+```{r spatial-data}
+wz_geom <- st_read("data/Workplace_Zones_ITM.shp")
+
+wz_geom %>% 
+  mutate(area = st_area(.$geometry)) %>%
+  st_set_geometry(NULL) %>% 
+  select(GUID, area) %>% 
+  mutate(area = drop_units(area))-> wz_area
+
+wz_geom %>%
+  st_transform(4326) %>% 
+  st_write("op/wz_4326.shp")
+
+# we prepared an extract of the Valuation Office data in a previous analysis
+valoff <- read_csv("../valuation_office/op/ireland_vo_records.csv")
+
+valoff %>%
+  select(property = `Property Number`,
+         total_value = Valuation,
+         lon = `X ITM`,
+         lat = `Y ITM`) %>% 
+  distinct(property, .keep_all = TRUE) %>%
+  filter(!is.na(lat) & !is.na(lon)) %>% 
+  st_as_sf(coords = c("lon", "lat"), crs = 2157) -> valoff_sf
+  
+# now perform the spatial join
+
+valoff_sf %>% 
+  st_join(wz_geom %>% select(GUID),
+          join = st_intersects) %>% 
+  st_set_geometry(NULL) -> valoff_by_wz
+
+valoff_by_wz %>% write_csv("op/valoff_by_wz.csv")
+
+# calculate the total sum of rateable valuation by WZ
+valoff_by_wz %>% 
+  group_by(GUID) %>% 
+  summarise(prop_count = n(),
+            average_valuation = mean(total_value),
+            total_value = sum(total_value)) -> wz_valoff_summary
+```
+
+We now have a dataset with proportional amounts of each variable, for each Workplace Zone. It might be useful to do some clustering analysis on this table to see if there are commonalities among the data.
+
+The first step is to perform some dimension reduction via Principal Components Analysis. The first plot below shows the first two components - they don't do much to explain the average valuation within a Workplace Zone though...!
+
+```{r wz-pca}
+# lets have an initial look at how correlated the variables in the wz dataset are..
+library(corrr)
+
+wz_features_w_area <- wz_features %>% left_join(wz_area)
+
+wzcorr <- wz_features_w_area %>% 
+  dplyr::select(where(is.numeric)) %>%
+  correlate() %>%
+  rearrange()
+
+wzcorr
+
+# first determine how many variables to include via PCA
+
+set.seed(20210807)
+
+wz_features_w_area %>% 
+  mutate_all(list(~na_if(., Inf))) -> wz_cleaned
+
+pca_rec <- recipe(~., data = wz_cleaned) %>%
+  update_role(GUID, new_role = "id") %>%
+  step_center(all_predictors()) %>% 
+  step_scale(all_predictors()) %>% 
+  step_pca(all_predictors(), 
+           id = 'pca',
+           threshold = 0.85,
+           role = "predictor")
+
+pca_prep <- prep(pca_rec)
+
+pca_prep
+
+pca_prep %>% 
+  tidy(id = "pca", type = "variance") %>% 
+  dplyr::filter(terms == "percent variance") %>% 
+  ggplot(aes(x = component, y = value)) + 
+  geom_col(fill = "#b6dfe2") + 
+  ylab("% of total variance")
+
+tidied_pca <- tidy(pca_prep, 3)
+
+tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  mutate(component = fct_inorder(component)) %>%
+  ggplot(aes(terms, value, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(component~., ncol = 1) +
+  labs(y = NULL) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "Principal Components 1 through 5",
+       y = "Magnitude",
+       x = "Category")
+
+library(tidytext)
+
+tidied_pca %>%
+  filter(component %in% paste0("PC", 1)) %>%
+  group_by(component) %>%
+  ungroup() %>%
+  mutate(terms = reorder_within(terms, abs(value), component)) %>%
+  ggplot(aes(abs(value),terms,  fill = value > 0)) +
+  geom_col() +
+  labs(
+    x = "Absolute value of contribution",
+    y = NULL, fill = "Positive?"
+  )
+
+pca_variance <- tidy(pca_prep, 3, type = "variance")
+
+pca_variance %>% 
+  filter(terms == "cumulative percent variance") %>% 
+  filter(value < 85) %>% dim()
+```
+
+It seems that 85% of the variability is explained by the first 20 Principal Components.
+
+```{r wz-clustering}
+# lets perform k-means clustering, with 20 clustering iterations
+# we want to use the pca results as the reduced dimensionality to perform our clustering
+
+wz_reduced <- pca_prep[["template"]]
+wz_reduced$GUID -> wz_guids
+
+wz_reduced %>% select(-GUID) -> wz_values
+
+kclusts <- tibble(k = 1:20) %>%
+  mutate(kclust = map(k, ~kmeans(wz_values, .x)),
+    tidied = map(kclust, tidy),
+    glanced = map(kclust, glance),
+    augmented = map(kclust, augment, wz_values)
+  )
+
+clusterings <- 
+  kclusts %>%
+  unnest(cols = c(glanced))
+
+ggplot(clusterings, aes(k, tot.withinss)) +
+  geom_line() +
+  geom_point()
+
+
+# hard to see an optmum cluster number. Let's go with nine as it's a good number for visualisation.
+kmeans(wz_values, 9) %>% 
+  augment(wz_reduced) %>% 
+  select(-starts_with('PC')) -> cluster_assignments_kmeans9
+
+cluster_assignments_kmeans9 %>% 
+  write_csv("./op/wz_clusters.csv")
+
+wz_geom %>% 
+  left_join(cluster_assignments_kmeans9) %>% 
+  select(cluster = .cluster)-> wz_clusters_geom
+
+wz_clusters_geom %>% 
+  st_transform(4326) -> wz_clusters_wgs84
+
+#quick leaflet map
+library(leaflet)
+
+factpal <- colorFactor(topo.colors(5), cluster_assignments_kmeans5$.cluster)
+
+leaflet(wz_clusters_wgs84) %>% 
+  addTiles() %>% 
+  addPolygons(stroke = FALSE,
+              color = ~factpal(cluster))
+```
+
+It would be nice to be able to build a heatmap of how each variable maps to each cluster.
+
+```{r cluster_variables}
+wz_features %<>% left_join(cluster_assignments_kmeans9) %>% 
+  rename(cluster = .cluster)
+
+mean_by_cluster <-
+  wz_features %>% 
+  group_by(cluster) %>% 
+  summarise(across(starts_with("prop"), ~ mean(.x))) %>% 
+  select(-1)
+
+col_means <- wz_features %>% 
+  summarise(across(starts_with("prop"), ~mean(.x)))
+
+col_sd <- wz_features %>% 
+  summarise(across(starts_with("prop"), ~sd(.x)))
+
+
+z_scores <- scale(mean_by_cluster, center = col_means, scale = col_sd)
+
+library(RColorBrewer)
+heatmap(t(z_scores),
+        col=brewer.pal(6,'BrBG'),
+        breaks=c(-1e10,-2,-1,0,1,2,+1e10),
+        xlab='Cluster Number',
+        add.expr=abline(h=(0:40)+0.5,v=(0:n.clus)+0.5,col='white')) 
+
+z_scores %>% 
+  as_tibble() %>% 
+  rownames_to_column(var = "cluster") %>% 
+  pivot_longer(cols = starts_with("prop"),
+               names_to = "predictor") -> z_scores_long
+
+z_scores_long %>% 
+  write_csv("op/cluster_weightings_long.csv")
+```
+
+
+We now have a table with summary information for;
+
+-   number of rateable properties by WZ
+-   average value of rateable properties
+-   total value of rateable properties
